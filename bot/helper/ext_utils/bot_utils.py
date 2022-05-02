@@ -358,25 +358,27 @@ def get_readable_message():
             return msg + bmsg, button
         return msg + bmsg, sbutton
 
-def turn(update, context):
-    query = update.callback_query
-    query.answer()
-    global COUNT, PAGE_NO
-    if query.data == "nex":
-        if PAGE_NO == pages:
-            COUNT = 0
-            PAGE_NO = 1
-        else:
-            COUNT += STATUS_LIMIT
-            PAGE_NO += 1
-    elif query.data == "pre":
-        if PAGE_NO == 1:
-            COUNT = STATUS_LIMIT * (pages - 1)
-            PAGE_NO = pages
-        else:
-            COUNT -= STATUS_LIMIT
-            PAGE_NO -= 1
-    message_utils.update_all_messages()
+def turn(data):
+    try:
+        with download_dict_lock:
+            global COUNT, PAGE_NO
+            if data[1] == "nex":
+                if PAGE_NO == pages:
+                    COUNT = 0
+                    PAGE_NO = 1
+                else:
+                    COUNT += STATUS_LIMIT
+                    PAGE_NO += 1
+            elif data[1] == "pre":
+                if PAGE_NO == 1:
+                    COUNT = STATUS_LIMIT * (pages - 1)
+                    PAGE_NO = pages
+                else:
+                    COUNT -= STATUS_LIMIT
+                    PAGE_NO -= 1
+        return True
+    except:
+        return False
 
 def get_readable_time(seconds: int) -> str:
     result = ''
@@ -410,15 +412,6 @@ def is_gdtot_link(url: str):
 def is_mega_link(url: str):
     return "mega.nz" in url or "mega.co.nz" in url
 
-def get_mega_link_type(url: str):
-    if "folder" in url:
-        return "folder"
-    if "file" in url:
-        return "file"
-    if "/#F!" in url:
-        return "folder"
-    return "file"
-
 def is_magnet(url: str):
     magnet = findall(MAGNET_REGEX, url)
     return bool(magnet)
@@ -435,14 +428,11 @@ def new_thread(fn):
 
     return wrapper
 
-def get_content_type(link: str):
+def get_content_type(link: str) -> str:
     try:
-        res = rhead(link, allow_redirects=True, timeout=5)
+        res = rhead(link, allow_redirects=True, timeout=5, headers = {'user-agent': 'Wget/1.12'})
         content_type = res.headers.get('content-type')
     except:
-        content_type = None
-
-    if content_type is None:
         try:
             res = urlopen(link, timeout=5)
             info = res.info()
