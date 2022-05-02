@@ -54,8 +54,8 @@ class setInterval:
         thread.start()
 
     def __setInterval(self):
-        nextTime = time.time() + self.interval
-        while not self.stopEvent.wait(nextTime - time.time()):
+        nextTime = time() + self.interval
+        while not self.stopEvent.wait(nextTime - time()):
             nextTime += self.interval
             self.action()
 
@@ -88,7 +88,7 @@ def getDownloadByGid(gid):
                 and dl.gid() == gid
             ):
                 return dl
-    return False
+    return None
 
 def getAllDownload(req_status: str):
     with download_dict_lock:
